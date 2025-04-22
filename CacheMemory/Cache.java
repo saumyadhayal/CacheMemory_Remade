@@ -1,17 +1,8 @@
+package CacheMemory;
+
+import CacheMemory.CacheBlock;
+
 import java.util.*;
-
-class CacheBlock {
-    boolean valid;
-    int tag;
-    int last_counter;
-
-    CacheBlock() {
-        valid = false;      // is the cache valid? (1 = valid, 0 = invalid)
-        tag = -1;           // Tag bits associated with the memory address to check if a given memory address is a cache hit or miss
-                            // -1 = nothing loaded
-        last_counter = 0;   // for replacing last block when set is full
-    }
-}
 
 public class Cache {
     private int cacheSize;
@@ -26,19 +17,16 @@ public class Cache {
     private int tagBits;
     private final int wordSize = 4; // bytes per word
 
-    public void setupCache(Scanner scanner) {
-        System.out.print("Enter cache size (in Bytes): ");
-        cacheSize = scanner.nextInt();
-        System.out.print("Enter words per block (1, 2, 4, 8): ");
-        wordsPerBlock = scanner.nextInt();
-        System.out.print("Enter mapping (DM or SA): ");
-        mappingPolicy = scanner.next().toUpperCase();
+    // New setupCache method that accepts parameters
+    public void setupCache(int cacheSize, int wordsPerBlock, String mappingPolicy, int nWayInput) {
+        this.cacheSize = cacheSize;
+        this.wordsPerBlock = wordsPerBlock;
+        this.mappingPolicy = mappingPolicy.toUpperCase();
 
-        if (mappingPolicy.equals("SA")) {
-            System.out.print("Enter number of blocks per set (N-way associative): ");
-            nWay = scanner.nextInt();
+        if (this.mappingPolicy.equals("SA")) {
+            this.nWay = nWayInput;
         } else {
-            nWay = 1;
+            this.nWay = 1;
         }
 
         blocks = cacheSize / (wordsPerBlock * wordSize);
@@ -60,5 +48,15 @@ public class Cache {
         System.out.println("Real Cache Size: " + (blocks * wordsPerBlock * wordSize) + " Bytes\n");
     }
 
-    
+    public int getNWay() {
+        return nWay;
+    }
+
+    public int getSets() {
+        return sets;
+    }
+
+    public CacheBlock getBlock(int i, int j) {
+        return this.cache[i][j];
+    }
 }
