@@ -204,10 +204,24 @@ public class Cache {
                     int n = scanner.nextInt();
                     System.out.print("Enter max word address value (exclusive): ");
                     int maxWord = scanner.nextInt();
+                    System.out.print("Simulation Type: 1) Random 2) Locality-Based: ");
+                    int simType = scanner.nextInt();
                     Random random = new Random();
-                    for (int i = 0; i < n; i++){
+                    if (simType == 1) {
+                        for (int i = 0; i < n; i++){
                         cache.accessWord(random.nextInt(maxWord));
+                        }
                     }
+                    else if (simType == 2){
+                        //locality based here
+                    }
+                    else {
+                        System.out.println("Invalid simulation type, defaulting to random.\n");
+                        for (int i = 0; i < n; i++) {
+                            cache.accessWord(random.nextInt(maxWord));
+                        }
+                    }
+                    
                     cache.printStats();
                     System.out.println();
                     break;
