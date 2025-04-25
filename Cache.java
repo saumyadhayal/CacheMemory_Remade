@@ -60,5 +60,81 @@ public class Cache {
         System.out.println("Real Cache Size: " + (blocks * wordsPerBlock * wordSize) + " Bytes\n");
     }
 
-    
+    public boolean access(int address){
+        return true; //placeholder
+    }
+
+    public void clearCache(){
+        //placeholder
+    }
+
+    public void printStats(){
+        // placeholder
+    }
+
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+
+        Cache cache = new Cache();
+        cache.setupCache(scanner);
+
+        while (true) {
+            System.out.println("Menu: ");
+            System.out.println("1) Access word address");
+            System.out.println("2) Clear Cache");
+            System.out.println("3) Simulation mode");
+            System.out.println("4) Print stats");
+            System.out.println("5) Exit");
+            System.out.print("Choose an option (1-5):");
+            int choice = scanner.nextInt();
+            System.out.println();
+
+            switch (choice) {
+                case 1: //access word address
+                    System.out.print("Enter word address: ");
+                    int wordAddr = scanner.nextInt();
+                    int byteAddr = wordAddr * cache.wordSize;
+                    boolean hit = cache.access(byteAddr);
+                    int blockAddress = byteAddr / (cache.wordSize * cache.wordsPerBlock);
+                    int idx;
+                    if (cache.indexBits > 0) {
+                        idx = blockAddress & ((1 << cache.indexBits) - 1);
+                    } else {
+                        idx = 0;
+                    }
+                    int tag = blockAddress >>> cache.indexBits;
+                    System.out.printf("Accessing word %d -> byte addr %d: Tag=%d, Index=%d --> %s%n\n", wordAddr, byteAddr, tag, idx, hit ? "Hit" : "Miss");
+                    break;
+                case 2: //clear cache
+                    cache.clearCache();
+                    break;
+                    
+                case 3: //simulation mode
+                    System.out.print("Enter the number of accesses to simulate: ");
+                    int n = scanner.nextInt();
+                    System.out.print("Enter max word address value (exclusive): ");
+                    int maxWord = scanner.nextInt();
+                    Random random = new Random();
+                    for (int i = 0; i < n; i++){
+                        int wa = random.nextInt(maxWord);
+                        cache.access(wa * cache.wordSize);
+                    }
+                    cache.printStats();
+                    System.out.println();
+                    break;
+                case 4: //stats
+                    cache.printStats();
+                    System.out.println();
+                    break;
+                case 5: // exit
+                    System.out.println("Exiting...");
+                    scanner.close();
+                    return;
+                default:
+                    System.out.println("Invalid Choice. \n");
+            }
+        
+        }
+
+    } 
 }
