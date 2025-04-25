@@ -1,4 +1,4 @@
-import CacheMemory.CacheBlock;
+import javafx.scene.control.Label;
 
 import java.util.*;
 
@@ -19,11 +19,20 @@ public class Cache {
     private int globalCounter = 0; // for LRU
     private int hitCount = 0;
     private int missCount = 0;
+    private Random random = new Random();
 
     //record for every access
     private List<AccessRecord> accessLog = new ArrayList<>();
 
-    private static class AccessRecord {
+    public int getindexBits() {
+        return this.indexBits;
+    }
+
+    public int getwordsPerBlock() {
+        return wordsPerBlock;
+    }
+
+    protected static class AccessRecord {
         int wordAddr, byteAddr, tag, index, offset;
         boolean hit;
 
@@ -44,19 +53,11 @@ public class Cache {
         }
     }
 
-    public void setupCache(Scanner scanner) {
-        System.out.print("Enter cache size (in Bytes): ");
-        cacheSize = scanner.nextInt();
-        System.out.print("Enter words per block (1, 2, 4, 8): ");
-        wordsPerBlock = scanner.nextInt();
-        System.out.print("Enter mapping (DM or SA): ");
-        mappingPolicy = scanner.next().toUpperCase();
-
-        if (this.mappingPolicy.equals("SA")) {
-            this.nWay = nWayInput;
-        } else {
-            this.nWay = 1;
-        }
+    public void setupCache(int cacheSize, int wordsPerBlock, String mappingPolicy, int nWayInput) {
+        this.cacheSize = cacheSize;
+        this.wordsPerBlock = wordsPerBlock;
+        this.mappingPolicy = mappingPolicy.toUpperCase();
+        this.nWay = mappingPolicy.equals("SA") ? nWayInput : 1;
 
         blocks = cacheSize / (wordsPerBlock * wordSize);
         sets = blocks / nWay;
@@ -69,13 +70,8 @@ public class Cache {
         for (int i = 0; i < sets; i++)
             for (int j = 0; j < nWay; j++)
                 cache[i][j] = new CacheBlock();
-
-        System.out.println("\nCache Setup Complete:");
-        System.out.println("Blocks: " + blocks);
-        System.out.println("Sets: " + sets);
-        System.out.println("Address Partition: [Tag: " + tagBits + " bits | Index: " + indexBits + " bits | Offset: " + offsetBits + " bits]");
-        System.out.println("Real Cache Size: " + (blocks * wordsPerBlock * wordSize) + " Bytes\n");
     }
+
 
     public int getNWay() {
         return nWay;
@@ -92,6 +88,7 @@ public class Cache {
     public boolean accessWord(int wordAddr){
         int byteAddr = wordAddr * wordSize;
         int blockAddress = byteAddr / (wordSize * wordsPerBlock);
+        int blockAddress1 = wordAddr/wordsPerBlock;
         int index;
         if (indexBits > 0) {
             index = blockAddress & ((1 << indexBits) - 1);
@@ -110,6 +107,9 @@ public class Cache {
                 cb.last_counter = ++globalCounter;
                 hitCount++;
                 hit = true;
+                cb.accessed=true;
+                cb.tag=tag;
+                cb.content=generateContent(wordAddr, blockAddress1);
                 break;
             }
             if (!cb.valid || cb.last_counter < LRUBlock.last_counter) {
@@ -122,8 +122,11 @@ public class Cache {
             LRUBlock.valid = true;
             LRUBlock.tag = tag;
             LRUBlock.last_counter = ++globalCounter;
+            LRUBlock.accessed = true;
+            LRUBlock.content = generateContent(wordAddr, blockAddress1);
             missCount++;
         }
+
 
         int offset = wordAddr % wordsPerBlock;
 
@@ -133,6 +136,21 @@ public class Cache {
 
 
     }
+
+    private String generateContent(int wordAddr, int blockAddress) {
+        StringBuilder sb = new StringBuilder();
+        if(wordAddr%wordsPerBlock != 0){
+            wordAddr=(wordAddr/wordsPerBlock) * wordsPerBlock;
+        }
+        sb.append("B").append(blockAddress).append("(");
+        for (int w = 0; w < wordsPerBlock; w++) {
+            sb.append("W").append(wordAddr + w);
+            if (w != wordsPerBlock - 1) sb.append(",");
+        }
+        sb.append(")");
+        return sb.toString();
+    }
+
 
     public void clearCache(){
         this.globalCounter = this.hitCount = this.missCount = 0;
@@ -169,6 +187,36 @@ public class Cache {
         }
         System.out.println();
     }
+
+    public AccessRecord getLastAccessRecord() {
+        return accessLog.isEmpty() ? null : accessLog.get(accessLog.size() - 1);
+    }
+
+    public void printStatsTo(Label label) {
+        int total = hitCount + missCount;
+        double hitRate = total > 0 ? (hitCount * 100.0 / total) : 0.0;
+        String stats = String.format(
+                "Accesses: %d, Hits: %d, Misses: %d (%.2f%% hit rate)",
+                total, hitCount, missCount, hitRate
+        );
+        label.setText(stats);
+    }
+
+
+    public void printAccessLogTo(Label label) {
+        if (accessLog.isEmpty()) {
+            label.setText("No accesses recorded.");
+        } else {
+            StringBuilder sb = new StringBuilder();
+            sb.append("Access Log:\n");
+            for (AccessRecord rec : accessLog) {
+                sb.append(rec.toString()).append("\n");
+            }
+            label.setText(sb.toString());
+        }
+    }
+
+
 
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
@@ -243,5 +291,39 @@ public class Cache {
         
         }
 
+    }
+
+    public void setupCache(Scanner scanner) {
+        System.out.print("Enter cache size (in Bytes): ");
+        cacheSize = scanner.nextInt();
+        System.out.print("Enter words per block (1, 2, 4, 8): ");
+        wordsPerBlock = scanner.nextInt();
+        System.out.print("Enter mapping (DM or SA): ");
+        mappingPolicy = scanner.next().toUpperCase();
+
+        if (mappingPolicy.equals("SA")) {
+            System.out.print("Enter number of blocks per set (N-way associative): ");
+            nWay = scanner.nextInt();
+        } else {
+            nWay = 1;
+        }
+
+        blocks = cacheSize / (wordsPerBlock * wordSize);
+        sets = blocks / nWay;
+
+        offsetBits = (int) (Math.log(wordsPerBlock) / Math.log(2));
+        indexBits = sets > 1 ? (int) (Math.log(sets) / Math.log(2)) : 0;
+        tagBits = 32 - indexBits - offsetBits;
+
+        cache = new CacheBlock[sets][nWay];
+        for (int i = 0; i < sets; i++)
+            for (int j = 0; j < nWay; j++)
+                cache[i][j] = new CacheBlock();
+
+        System.out.println("\nCache Setup Complete:");
+        System.out.println("Blocks: " + blocks);
+        System.out.println("Sets: " + sets);
+        System.out.println("Address Partition: [Tag: " + tagBits + " bits | Index: " + indexBits + " bits | Offset: " + offsetBits + " bits]");
+        System.out.println("Real Cache Size: " + (blocks * wordsPerBlock * wordSize) + " Bytes\n");
     }
 }
