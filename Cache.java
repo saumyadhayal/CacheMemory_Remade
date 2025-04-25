@@ -26,6 +26,10 @@ public class Cache {
     private int tagBits;
     private final int wordSize = 4; // bytes per word
 
+    private int globalCounter = 0; // for LRU
+    private int hitCount = 0;
+    private int missCount = 0;
+
     public void setupCache(Scanner scanner) {
         System.out.print("Enter cache size (in Bytes): ");
         cacheSize = scanner.nextInt();
@@ -61,15 +65,70 @@ public class Cache {
     }
 
     public boolean access(int address){
-        return true; //placeholder
+        int blockAddress = address / (wordSize * wordsPerBlock);
+        int index;
+        if (indexBits > 0) {
+            index = blockAddress & ((1 << indexBits) - 1);
+        } else {
+            index = 0;
+        }
+        int tag = blockAddress >>> indexBits;
+
+        //search set
+        CacheBlock[] set = cache[index];
+        for (CacheBlock cb : set) {
+            if (cb.valid && cb.tag == tag){
+                // this is a hit so update LRU timestamp
+                cb.last_counter = ++globalCounter;
+                hitCount++;
+                return true;
+            }
+        }
+
+        // this is a miss so find the replacement block (invalid or LRU)
+        CacheBlock LRUBlock = set[0];
+        for (CacheBlock cb : set) {
+            if (!cb.valid) {
+                LRUBlock = cb;
+                break;
+            }
+            if (cb.last_counter < LRUBlock.last_counter){
+                LRUBlock = cb;
+            }
+        }
+
+        // new block
+        LRUBlock.valid = true;
+        LRUBlock.tag = tag;
+        LRUBlock.last_counter = ++globalCounter;
+
+        missCount++;
+        return false;
+
+
     }
 
     public void clearCache(){
-        //placeholder
+        this.globalCounter = this.hitCount = this.missCount = 0;
+        for (int i = 0; i < sets; i++) {
+            for (int j = 0; j < nWay; j++){
+                cache[i][j] = new CacheBlock();
+            }
+        }
+        System.out.println("Cache cleared. \n");
     }
 
     public void printStats(){
-        // placeholder
+        int total = hitCount + missCount;
+        double hitRate;
+        if (total > 0){
+            hitRate = (hitCount * 100.0 / total);
+        }
+        else {
+            hitRate = 0.0;
+        }
+        System.out.printf("Accesses: %d, Hits: %d, Misses: %d (%.2f%% hit rate)%n",
+        total, hitCount, missCount, hitRate);
     }
 
     public static void main(String[] args) {
@@ -96,14 +155,14 @@ public class Cache {
                     int byteAddr = wordAddr * cache.wordSize;
                     boolean hit = cache.access(byteAddr); //method needs to be implemented
                     int blockAddress = byteAddr / (cache.wordSize * cache.wordsPerBlock);
-                    int idx;
+                    int index;
                     if (cache.indexBits > 0) {
-                        idx = blockAddress & ((1 << cache.indexBits) - 1);
+                        index = blockAddress & ((1 << cache.indexBits) - 1);
                     } else {
-                        idx = 0;
+                        index = 0;
                     }
                     int tag = blockAddress >>> cache.indexBits;
-                    System.out.printf("Accessing word %d -> byte addr %d: Tag=%d, Index=%d --> %s%n\n", wordAddr, byteAddr, tag, idx, hit ? "Hit" : "Miss");
+                    System.out.printf("Accessing word %d -> byte addr %d: Tag=%d, Index=%d --> %s%n\n", wordAddr, byteAddr, tag, index, hit ? "Hit" : "Miss");
                     break;
                 case 2: //clear cache
                     cache.clearCache(); //method needs to be implemented
