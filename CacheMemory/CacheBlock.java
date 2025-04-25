@@ -6,7 +6,7 @@ public class CacheBlock {
     int last_counter;
 
     public CacheBlock() {
-        valid = false;
+        valid = true;
         tag = -1;
         last_counter = 0;
     }
