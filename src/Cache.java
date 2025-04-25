@@ -1,0 +1,247 @@
+import CacheMemory.CacheBlock;
+
+import java.util.*;
+
+public class Cache {
+    private int cacheSize;
+    private int wordsPerBlock;
+    private String mappingPolicy;
+    private int nWay;
+    private CacheBlock[][] cache;
+    private int blocks;
+    private int sets;
+    private int offsetBits;
+    private int indexBits;
+    private int tagBits;
+    private final int wordSize = 4; // bytes per word
+
+
+    private int globalCounter = 0; // for LRU
+    private int hitCount = 0;
+    private int missCount = 0;
+
+    //record for every access
+    private List<AccessRecord> accessLog = new ArrayList<>();
+
+    private static class AccessRecord {
+        int wordAddr, byteAddr, tag, index, offset;
+        boolean hit;
+
+        AccessRecord(int wordAddr, int byteAddr, int tag, int index, int offset, boolean hit) {
+            this.wordAddr = wordAddr;
+            this.byteAddr = byteAddr;
+            this.tag = tag;
+            this.index = index;
+            this.offset = offset;
+            this.hit = hit;
+        }
+
+        public String toString(){
+            return String.format(
+                "word %d -> byte %d : tag=%d, index=%d, offset=%d -> %s",
+                wordAddr, byteAddr, tag, index, offset, hit ? "Hit" : "Miss"
+            );
+        }
+    }
+
+    public void setupCache(Scanner scanner) {
+        System.out.print("Enter cache size (in Bytes): ");
+        cacheSize = scanner.nextInt();
+        System.out.print("Enter words per block (1, 2, 4, 8): ");
+        wordsPerBlock = scanner.nextInt();
+        System.out.print("Enter mapping (DM or SA): ");
+        mappingPolicy = scanner.next().toUpperCase();
+
+        if (this.mappingPolicy.equals("SA")) {
+            this.nWay = nWayInput;
+        } else {
+            this.nWay = 1;
+        }
+
+        blocks = cacheSize / (wordsPerBlock * wordSize);
+        sets = blocks / nWay;
+
+        offsetBits = (int) (Math.log(wordsPerBlock) / Math.log(2));
+        indexBits = sets > 1 ? (int) (Math.log(sets) / Math.log(2)) : 0;
+        tagBits = 32 - indexBits - offsetBits;
+
+        cache = new CacheBlock[sets][nWay];
+        for (int i = 0; i < sets; i++)
+            for (int j = 0; j < nWay; j++)
+                cache[i][j] = new CacheBlock();
+
+        System.out.println("\nCache Setup Complete:");
+        System.out.println("Blocks: " + blocks);
+        System.out.println("Sets: " + sets);
+        System.out.println("Address Partition: [Tag: " + tagBits + " bits | Index: " + indexBits + " bits | Offset: " + offsetBits + " bits]");
+        System.out.println("Real Cache Size: " + (blocks * wordsPerBlock * wordSize) + " Bytes\n");
+    }
+
+    public int getNWay() {
+        return nWay;
+    }
+
+    public int getSets() {
+        return sets;
+    }
+
+    public CacheBlock getBlock(int i, int j) {
+        return this.cache[i][j];
+    }
+
+    public boolean accessWord(int wordAddr){
+        int byteAddr = wordAddr * wordSize;
+        int blockAddress = byteAddr / (wordSize * wordsPerBlock);
+        int index;
+        if (indexBits > 0) {
+            index = blockAddress & ((1 << indexBits) - 1);
+        } else {
+            index = 0;
+        }
+        int tag = blockAddress >>> indexBits;
+
+        //search set for a hit
+        CacheBlock[] set = cache[index];
+        CacheBlock LRUBlock = set[0];
+        boolean hit = false;
+        for (CacheBlock cb : set) {
+            if (cb.valid && cb.tag == tag){
+                // this is a hit so update LRU
+                cb.last_counter = ++globalCounter;
+                hitCount++;
+                hit = true;
+                break;
+            }
+            if (!cb.valid || cb.last_counter < LRUBlock.last_counter) {
+                LRUBlock = cb;
+            }
+        }
+
+        if (!hit){
+            // this is a miss so replace LRU
+            LRUBlock.valid = true;
+            LRUBlock.tag = tag;
+            LRUBlock.last_counter = ++globalCounter;
+            missCount++;
+        }
+
+        int offset = wordAddr % wordsPerBlock;
+
+        accessLog.add(new AccessRecord(wordAddr, byteAddr, tag, index, offset, hit));
+
+        return hit;
+
+
+    }
+
+    public void clearCache(){
+        this.globalCounter = this.hitCount = this.missCount = 0;
+        accessLog.clear();
+        for (int i = 0; i < sets; i++) {
+            for (int j = 0; j < nWay; j++){
+                cache[i][j] = new CacheBlock();
+            }
+        }
+        System.out.println("Cache cleared. \n");
+    }
+
+    public void printStats(){
+        int total = hitCount + missCount;
+        double hitRate;
+        if (total > 0){
+            hitRate = (hitCount * 100.0 / total);
+        }
+        else {
+            hitRate = 0.0;
+        }
+        System.out.printf("Accesses: %d, Hits: %d, Misses: %d (%.2f%% hit rate)%n",
+        total, hitCount, missCount, hitRate);
+    }
+
+    public void printAccessLog(){
+        if (accessLog.isEmpty()){
+            System.out.println("No accesses recorded. \n");
+            return;
+        }
+        System.out.println("Access Log: ");
+        for (AccessRecord rec : accessLog) {
+            System.out.println(rec);
+        }
+        System.out.println();
+    }
+
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+
+        Cache cache = new Cache();
+        cache.setupCache(scanner);
+
+        while (true) {
+            System.out.println("Menu: ");
+            System.out.println("1) Access word address");
+            System.out.println("2) Clear Cache");
+            System.out.println("3) Simulation mode");
+            System.out.println("4) Print Stats");
+            System.out.println("5) Print Access Log");
+            System.out.println("6) Exit");
+            System.out.print("Choose an option (1-6):");
+            int choice = scanner.nextInt();
+            System.out.println();
+
+            switch (choice) {
+                case 1: //access word address
+                    System.out.print("Enter word address: ");
+                    int wa = scanner.nextInt();
+                    boolean hit = cache.accessWord(wa);
+                    System.out.println(cache.accessLog.get(cache.accessLog.size()-1));
+                    System.out.println();
+                    break;
+                case 2: //clear cache
+                    cache.clearCache();
+                    break;
+                    
+                case 3: //simulation mode
+                    System.out.print("Enter the number of accesses to simulate: ");
+                    int n = scanner.nextInt();
+                    System.out.print("Enter max word address value (exclusive): ");
+                    int maxWord = scanner.nextInt();
+                    System.out.print("Simulation Type: 1) Random 2) Locality-Based: ");
+                    int simType = scanner.nextInt();
+                    Random random = new Random();
+                    if (simType == 1) {
+                        for (int i = 0; i < n; i++){
+                        cache.accessWord(random.nextInt(maxWord));
+                        }
+                    }
+                    else if (simType == 2){
+                        //locality based here
+                    }
+                    else {
+                        System.out.println("Invalid simulation type, defaulting to random.\n");
+                        for (int i = 0; i < n; i++) {
+                            cache.accessWord(random.nextInt(maxWord));
+                        }
+                    }
+                    
+                    cache.printStats();
+                    System.out.println();
+                    break;
+                case 4: //stats
+                    cache.printStats();
+                    System.out.println();
+                    break;
+                case 5: // access log
+                    cache.printAccessLog();
+                    break;
+                case 6: // exit
+                    System.out.println("Exiting...");
+                    scanner.close();
+                    return;
+                default:
+                    System.out.println("Invalid Choice. \n");
+            }
+        
+        }
+
+    }
+}

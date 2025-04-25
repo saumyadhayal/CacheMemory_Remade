@@ -1,5 +1,3 @@
-package CacheMemory;
-
 /**
  * An interface representing any class whose objects get notified when
  * the objects they are observing update themselves.

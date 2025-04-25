@@ -1,5 +1,3 @@
-package CacheMemory;
-
 public class CacheBlock {
     boolean valid;
     int tag;
