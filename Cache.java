@@ -94,7 +94,7 @@ public class Cache {
                     System.out.print("Enter word address: ");
                     int wordAddr = scanner.nextInt();
                     int byteAddr = wordAddr * cache.wordSize;
-                    boolean hit = cache.access(byteAddr);
+                    boolean hit = cache.access(byteAddr); //method needs to be implemented
                     int blockAddress = byteAddr / (cache.wordSize * cache.wordsPerBlock);
                     int idx;
                     if (cache.indexBits > 0) {
@@ -106,7 +106,7 @@ public class Cache {
                     System.out.printf("Accessing word %d -> byte addr %d: Tag=%d, Index=%d --> %s%n\n", wordAddr, byteAddr, tag, idx, hit ? "Hit" : "Miss");
                     break;
                 case 2: //clear cache
-                    cache.clearCache();
+                    cache.clearCache(); //method needs to be implemented
                     break;
                     
                 case 3: //simulation mode
@@ -119,11 +119,11 @@ public class Cache {
                         int wa = random.nextInt(maxWord);
                         cache.access(wa * cache.wordSize);
                     }
-                    cache.printStats();
+                    cache.printStats(); //method needs to be implemented
                     System.out.println();
                     break;
                 case 4: //stats
-                    cache.printStats();
+                    cache.printStats(); //method needs to be implemented
                     System.out.println();
                     break;
                 case 5: // exit
