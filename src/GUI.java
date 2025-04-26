@@ -1,5 +1,6 @@
 import javafx.application.Application;
 import javafx.geometry.Insets;
+import javafx.geometry.NodeOrientation;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -216,6 +217,7 @@ public class GUI extends Application {
 
     private void drawCacheGrid() {
         cacheGrid.getChildren().clear();
+        cacheGrid.setNodeOrientation(NodeOrientation.LEFT_TO_RIGHT);
         cacheGrid.setGridLinesVisible(true);
         cacheGrid.setAlignment(Pos.CENTER);
         cacheGrid.setPadding(new Insets(10));

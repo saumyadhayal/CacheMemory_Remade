@@ -118,7 +118,12 @@ public class Cache {
                 cb.content=generateContent(wordAddr, blockAddress1);
                 break;
             }
-            if (!cb.valid || cb.last_counter < LRUBlock.last_counter) {
+            if (!cb.valid) {
+                LRUBlock = cb;
+                break;
+            }
+
+            if (LRUBlock == null || cb.last_counter < LRUBlock.last_counter) {
                 LRUBlock = cb;
             }
         }
