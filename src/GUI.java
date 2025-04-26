@@ -40,7 +40,6 @@ public class GUI extends Application {
 
         ChoiceBox<String> simulationTypeBox = new ChoiceBox<>();
         simulationTypeBox.getItems().addAll("Random", "Locality-Based");
-        simulationTypeBox.setValue("Random"); // default
 
 
         // Setup button
@@ -82,7 +81,6 @@ public class GUI extends Application {
 
             ChoiceBox<String> typeChoice = new ChoiceBox<>();
             typeChoice.getItems().addAll("Random", "Locality-Based");
-            typeChoice.setValue("Random");
             typeDialog.getDialogPane().setContent(typeChoice);
 
             typeDialog.setResultConverter(btn -> {
@@ -94,7 +92,7 @@ public class GUI extends Application {
             if (!typeResult.isPresent()) return;  // user canceled
 
             Random rand = new Random();
-            String simulationType = simulationTypeBox.getValue();
+            String simulationType = typeResult.get();
 
             if (simulationType.equals("Random")) {
                 // Random Accesses
