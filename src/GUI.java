@@ -35,6 +35,7 @@ public class GUI extends Application {
         Button statsButton = new Button("Print Stats");
         Button logButton = new Button("Print Log");
         Button clearButton = new Button("Clear Cache");
+        Button cacheButton = new Button("Cache Details");
 
         ChoiceBox<String> simulationTypeBox = new ChoiceBox<>();
         simulationTypeBox.getItems().addAll("Random", "Locality-Based");
@@ -166,6 +167,10 @@ public class GUI extends Application {
             drawCacheGrid();
         });
 
+        cacheButton.setOnAction(e -> {
+            cache.printSetupTo(outputLabel);
+        });
+
         // Input layout
         GridPane inputGrid = new GridPane();
         inputGrid.setPadding(new Insets(10));
@@ -186,7 +191,7 @@ public class GUI extends Application {
         inputGrid.add(wordAddrField, 1, 5);
         inputGrid.add(accessButton, 1, 6);
 
-        HBox controlButtons = new HBox(10, simulateButton, statsButton, logButton, clearButton);
+        HBox controlButtons = new HBox(10, simulateButton, statsButton, logButton, clearButton, cacheButton);
         controlButtons.setAlignment(Pos.CENTER);
         controlButtons.setPadding(new Insets(10));
 

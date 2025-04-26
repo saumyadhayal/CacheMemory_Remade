@@ -2,7 +2,7 @@ import javafx.scene.control.Label;
 
 import java.util.*;
 
-public class Cache {
+public class CacheTerminal {
     private int cacheSize;
     private int wordsPerBlock;
     private String mappingPolicy;
@@ -60,24 +60,7 @@ public class Cache {
         }
     }
 
-    public void setupCache(int cacheSize, int wordsPerBlock, String mappingPolicy, int nWayInput) {
-        this.cacheSize = cacheSize;
-        this.wordsPerBlock = wordsPerBlock;
-        this.mappingPolicy = mappingPolicy.toUpperCase();
-        this.nWay = mappingPolicy.equals("SA") ? nWayInput : 1;
-
-        blocks = cacheSize / (wordsPerBlock * wordSize);
-        sets = blocks / nWay;
-
-        offsetBits = (int) (Math.log(wordsPerBlock) / Math.log(2));
-        indexBits = sets > 1 ? (int) (Math.log(sets) / Math.log(2)) : 0;
-        tagBits = 32 - indexBits - offsetBits;
-
-        cache = new CacheBlock[sets][nWay];
-        for (int i = 0; i < sets; i++)
-            for (int j = 0; j < nWay; j++)
-                cache[i][j] = new CacheBlock();
-    }
+    
 
 
     public int getNWay() {
