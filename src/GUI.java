@@ -132,9 +132,9 @@ public class GUI extends Application {
 
             } else {
                     // Locality-Based Access
-                    int num = 50;          // your default
-                    int maxWord = 100;     // your default
-                    int windowSize = 10;   // fixed locality window
+                    int num = 50;          // default
+                    int maxWord = 100;     // default
+                    int windowSize = 10;   
                     int clusterStart = rand.nextInt(maxWord - windowSize + 1);
 
                     for (int i = 0; i < num; i++) {
